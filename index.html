@@ -1,0 +1,242 @@
+<!--
+ CANAL INTERNET E COISAS
+ Ambiente MQTT Internet e Coisas
+    - Broker
+    - Gerador de dados para teste
+    - Clientes MQTT
+ 05/2019 - Andre Michelon
+-->
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Internet e Coisas #70</title>
+  <style>
+    body {
+      padding-top: 10px;
+      font-family: Verdana, Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      color: black;
+      margin: 5px;
+      background: #a0a0a0 url("http://internetecoisas.com.br/img/Background.jpg") no-repeat fixed center;
+      background-size: cover;
+    }
+    th {
+      padding: 5px;
+      border-radius: 12px;
+      color: #ffffff;
+      background: #404040;
+      border: #000000 solid 3px;
+    }
+    td {
+      text-align: center;
+      padding: 5px;
+      border-radius: 10px;
+      background: #ffffff;
+      border: #000000 solid 3px;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script>
+    /***************************************************
+     * Cliente MQTT
+     */
+
+    // Variáveis para cliente MQTT
+    var mqtt;
+    var reconnectTimeout = 2000;
+    var host = 'mqtt.internetecoisas.com.br';
+    var port = 8080;
+    var vInteger = null;
+    var vFloat = null;
+
+    function subscribeISO8601() {
+      // Assina Tópico datetime/ISO-8601
+      mqtt.subscribe("datetime/ISO-8601");
+    }
+
+    function onConnect() {
+      // Conexao ao Broker
+      console.log('Conectado');
+      mqtt.subscribe('internetecoisas/example/integer');
+      mqtt.subscribe('internetecoisas/example/float');
+      mqtt.subscribe("internetecoisas/example/toggle");
+      mqtt.subscribe("internetecoisas/example/text");
+      mqtt.subscribe("internetecoisas/example/json");
+      subscribeISO8601();
+    }
+    function onError(message) {
+      // Ocorrencia de erro
+      console.log('Falha: ' + message.errorCode + ' ' + message.errorMessage);
+      setTimeout(MQTTConnect, reconnectTimeout);
+    }
+    function onMessageArrived(msg) {
+      // Mensagem recebida
+      console.log('Mensagem: ' + msg.destinationName + '=' + msg.payloadString);
+      if (msg.destinationName == "datetime/ISO-8601") {
+        // Tópico ISO-8601
+        mqtt.unsubscribe("datetime/ISO-8601");
+        var t = new Date(msg.payloadString);
+        document.getElementById("time").innerText = "ISO-8601: " + t.toLocaleDateString() + " " + t.toLocaleTimeString();
+        setTimeout(subscribeISO8601, 60000);
+      } else if (msg.destinationName == 'internetecoisas/example/integer') {
+        // Tópico integer
+        vInteger = parseInt(msg.payloadString);
+        dataInt.setValue(0, 1, msg.payloadString);
+        chartInt.draw(dataInt, optionsInt);
+      } else if (msg.destinationName == 'internetecoisas/example/float') {
+        // Tópico float
+        vFloat = parseFloat(msg.payloadString);
+      } else if (msg.destinationName == "internetecoisas/example/toggle") {
+        // Tópico toggle
+        var t = document.getElementById("toggle");
+        if (msg.payloadString == 1) {
+          t.innerText = "Toggle: Ligado";
+          t.style.background = "rgb(170, 236, 83)";
+        } else {
+          t.innerText = "Toggle: Desligado";
+          t.style.background = "rgb(227, 0, 14)";
+        }
+      } else if (msg.destinationName == "internetecoisas/example/text") {
+        // Tópico text (Data/Hora)
+        var t = new Date(msg.payloadString);
+        document.getElementById("dt").innerText = "Text: " + t.toLocaleDateString() + " " + t.toLocaleTimeString();
+      } else if (msg.destinationName == "internetecoisas/example/json") {
+        // Tópico json
+        document.getElementById("json").innerText = "JSON: " + msg.payloadString;
+      }
+      if (vInteger && vFloat) {
+        // Inserir nova linha de dados
+        console.log('Inserir linha');
+        dataLine.addRows([[new Date(),
+                            vInteger,
+                            vFloat * 700,
+                            parseInt(30000 * Math.sin(vFloat * 15) + 35000)]]);
+        if (dataLine.getNumberOfRows() > 20) {
+          // Excluir linha de dados
+          console.log('Excluir linha');
+          dataLine.removeRow(0);
+        }
+        // Aguardar novos dados
+        vInteger = null;
+        vFloat = null;
+        // Atualiza gráfico de linhas
+        chartLine.draw(dataLine, optionsLine);
+      }
+    }
+    function MQTTConnect() {
+      // Conecta no Broker
+      console.log('Conectando ' + host + ' ' + port);
+      mqtt = new Paho.MQTT.Client(host, port, 'IeCJSClient' + parseInt(Math.random() * 1e5));
+      var options = { timeout: 10,
+                      keepAliveInterval: 10,
+                      onSuccess: onConnect,
+                      onFailure: onError
+                    };
+      mqtt.onMessageArrived = onMessageArrived;
+      mqtt.onConnectionLost = onError;
+      mqtt.connect(options);
+    }
+
+    /***************************************************
+     * Gráficos
+     */
+
+    // Instancias dos gráficos
+    google.charts.load('current', {'packages':['gauge', 'corechart'], 'language': 'pt-br', 'mapsApiKey': 'AIzaSyBWF8UvD9TyJSKsSCKP3PtHisRPbG4zuRA'});
+    google.charts.setOnLoadCallback(drawInt);
+    google.charts.setOnLoadCallback(drawLine);
+
+    // Variáveis para gráficos
+    var chartInt;
+    var chartLine
+    var dataInt;
+    var dataLine;
+    var optionsInt;
+    var optionsLine;
+
+    function drawInt() {
+      // Desenha Inteiro
+      dataInt = google.visualization.arrayToDataTable([
+        ['Label', 'Value'],
+        ['x1.000', 0]
+      ]);
+      optionsInt = {
+        min: 0, max: 70000,
+        majorTicks: ["0", "10", "20", "30", "40", "50", "60", "70"],
+        minorTicks: 0,
+        greenFrom: 0, greenTo: 30000,
+        yellowFrom: 30000, yellowTo: 50000,
+        redFrom: 50000, redTo: 70000
+      };
+      chartInt = new google.visualization.Gauge(document.getElementById('int'));
+      chartInt.draw(dataInt, optionsInt);
+    }
+
+    function drawLine() {
+      // Desenha Gráfico de Linhas
+      dataLine = new google.visualization.DataTable();
+      dataLine.addColumn('datetime', 'Hora');
+      dataLine.addColumn('number', 'Integer');
+      dataLine.addColumn('number', 'Float');
+      dataLine.addColumn('number', 'Seno');
+      optionsLine = {
+        title: 'Gráfico de Linhas Dinâmico',
+        pointSize: 3,
+        legend: {
+          position: 'right'
+          },
+        animation:{
+          duration: 500,
+          easing: 'out'
+        },
+        curveType: 'function',
+        hAxis: {
+          title: 'Horário',
+          format: 'HH:mm:ss',
+          gridlines: {
+            count: 6
+          }
+        },
+        vAxis: {
+          title: 'Valor',
+          format: 'long',
+          gridlines: {
+            count: 7
+          },
+          viewWindow: {
+            min: 0,
+            max: 70000
+          }
+        }
+      };
+      dataLine.addRows([[new Date(),
+                        0,
+                        0,
+                        0]]);
+      chartLine = new google.visualization.LineChart(document.getElementById('line'));
+      chartLine.draw(dataLine, optionsLine);
+      }
+    </script>
+  </head>
+<body onload="MQTTConnect()">
+  <table align="center">
+    <tr>
+      <th colspan="3">Ambiente MQTT Internet e Coisas - #70</th>
+    </tr>
+    <tr>
+      <td id="int" style="width: 200px; height: 300px;"></td>
+      <td id="line" colspan="2" style="width: 700px; height: 300px;"></td>
+    </tr>
+    <tr>
+      <th id="json" colspan="3">JSON</th>
+    </tr>
+    <tr>
+      <th id="toggle">Toggle: n/d</th>
+      <th id="time">ISO-8601: n/d</th>
+      <th id="dt">Text: n/d</th>
+    </tr>
+  </table>
+</body>
+</html>
