@@ -32,6 +32,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.js"></script> -->
   <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src='http://code.jquery.com/jquery-1.7.2.min.js'></script>
   <script>
     /***************************************************
      * Cliente MQTT
@@ -103,6 +104,23 @@
       mqtt.onConnectionLost = onError;
       mqtt.connect(options);
     }
+
+    // $('#liga-output').click(function() {
+		// 		var payload = "L";  
+		// 		var TopicPublish = $('#pub-topic-text')[0].value;				
+		// 		mosq.publish(TopicPublish, payload, 0);
+		// 	});
+
+    // $('#liga-output').click(function( event) {
+    //   alert("teste");
+    // });
+
+    $( "#liga-output" ).click(function( event ) {
+      alert( event.currentTarget === this ); // true
+    });
+
+
+      
     this.publish = function(topic,payload,qos,retained) {
        console.log("Publising message to: ", topic);
       if(arguments.length === 0){
@@ -211,5 +229,7 @@
       <th id="dt" colspan="2">Atualização: n/d</th>
     </tr>
   </table>
+    <input class="but" id="liga-output"     type="button" value="Ligar">
+    <input class="but" id="desliga-output"  type="button" value="Desligar"><br><br>
 </body>
 </html>
