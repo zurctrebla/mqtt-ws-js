@@ -31,8 +31,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script><!-- 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.js"></script> -->
-  <script src="https://www.gstatic.com/charts/loader.js"></script>
-  <script src='http://code.jquery.com/jquery-1.7.2.min.js'></script>
+  <script src="https://www.gstatic.com/charts/loader.js"></script><!-- 
+  <script src='http://code.jquery.com/jquery-1.7.2.min.js'></script> -->
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
   <script>
     /***************************************************
      * Cliente MQTT
@@ -40,12 +41,16 @@
     // Variáveis para cliente MQTT
     var mqtt;
     var reconnectTimeout = 2000;
-    var host = "137.184.1.196";     /* Albert */
+    var host = "mqtt-newttech.tk";  /* Albert */
     var port = 8083;                /* Albert */ // 8083 websocket 8883 mqtt
     var user = "user";              /* Albert */
     var password = "10203040";      /* Albert */
     var topic = "teste/esp8266";    /* Albert */
-    // var message = "teste broker";   /* Albert */
+    var payload = 0;
+    var qos = 0;
+    var retained = 0;
+    // var message = "test";
+
     function onConnect() {
       // Conexao ao Broker
       console.log("Conectado");
@@ -89,6 +94,7 @@
         document.getElementById("dt").innerText = "Atualização: " + t.toLocaleDateString() + " " + t.toLocaleTimeString();
       }
     }
+
     function MQTTConnect() {
       // Conecta no Broker
       console.log("Conectando " + host + " " + port);
@@ -105,44 +111,43 @@
       mqtt.connect(options);
     }
 
-    // $('#liga-output').click(function() {
-		// 		var payload = "L";  
-		// 		var TopicPublish = $('#pub-topic-text')[0].value;				
-		// 		mosq.publish(TopicPublish, payload, 0);
-		// 	});
-
-    // $('#liga-output').click(function( event) {
-    //   alert("teste");
-    // });
-
-    $( "#liga-output" ).click(function( event ) {
-      alert( event.currentTarget === this ); // true
-    });
-
-
-      
     this.publish = function(topic,payload,qos,retained) {
-       console.log("Publising message to: ", topic);
-      if(arguments.length === 0){
-        throw new Error("Invalid argument."+"length");
-      }else if(arguments.length == 1) {
-        if (!(topic instanceof Message) && (typeof topic !== "string"))
-          throw new Error("Invalid argument:"+ typeof topic);
-        message = topic;
-        if (typeof message.destinationName === "undefined")
-          throw new Error(format(ERROR.INVALID_ARGUMENT,[message.destinationName,"Message.destinationName"]));
-        client.send(message);
-      }else {
-        //parameter checking in Message object
-        message = new Message(payload);
-        message.destinationName = topic;
-        if(arguments.length >= 3)
-          message.qos = qos;
-        if(arguments.length >= 4)
-          message.retained = retained;
-        client.send(message);
-      }
-    };
+			 console.log("Publishing message to: ", topic);
+			 var message;
+ 			if(arguments.length === 0){
+ 				throw new Error("Invalid argument."+"length");
+ 			}else if(arguments.length == 1) {
+ 				if (!(topic instanceof Message) && (typeof topic !== "string"))
+ 					throw new Error("Invalid argument:"+ typeof topic);
+ 				message = topic;
+ 				if (typeof message.destinationName === "undefined")
+ 					throw new Error(format(ERROR.INVALID_ARGUMENT,[message.destinationName,"Message.destinationName"]));
+ 				client.send(message);
+ 			}else {
+ 				//parameter checking in Message object
+ 				// message = new Message(payload);
+
+        message = new Paho.MQTT.Message(payload);
+
+ 				message.destinationName = topic;
+ 				if(arguments.length >= 3)
+ 					message.qos = qos;
+ 				if(arguments.length >= 4)
+ 					message.retained = retained;
+ 				client.send(message);
+ 			}
+		};
+
+    $(document).ready(function() {
+
+      $("#liga-output").click(function(){
+
+          return publish(topic, payload, qos, retained);
+          
+
+      });
+
+    });
     /***************************************************
      * Gráficos
      */
@@ -214,6 +219,10 @@
     }
   </script>
 </head>
+
+<input class="but" id="liga-output"     type="button" value="Ligar">
+<input class="but" id="desliga-output"  type="button" value="Desligar"><br><br>
+
 <body onload="MQTTConnect()">
   <table align="center">
     <tr>
@@ -229,7 +238,5 @@
       <th id="dt" colspan="2">Atualização: n/d</th>
     </tr>
   </table>
-    <input class="but" id="liga-output"     type="button" value="Ligar">
-    <input class="but" id="desliga-output"  type="button" value="Desligar"><br><br>
 </body>
 </html>

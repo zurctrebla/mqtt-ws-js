@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Iot</title>
+  <style>
+    body {
+      padding-top: 30px;
+      font-family: Verdana, Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      color: black;
+      margin: 5px;
+      background: #a0a0a0 url("http://internetecoisas.com.br/img/Background.jpg") no-repeat fixed center;
+      background-size: cover;
+    }
+    th {
+      padding: 5px;
+      border-radius: 12px;
+      color: #ffffff;
+      background: #404040;
+      border: #000000 solid 3px;
+    }
+    td {
+      text-align: center;
+      padding: 5px;
+      border-radius: 10px;
+      background: #666666;
+      border: #000000 solid 3px;
+    }
+  </style><!-- 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.min.js"></script> -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.js"></script>
+
+  <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+  <script>
+    /***************************************************
+     * Cliente MQTT
+     */
+    // Variáveis para cliente MQTT
+    var mqtt;
+    var reconnectTimeout = 2000;
+    var host = "mqtt-newttech.tk";  /* Albert */
+    var port = 8083;                /* Albert */ // 8083 websocket 8883 mqtt
+    var user = "user";              /* Albert */
+    var password = "10203040";      /* Albert */
+    var topic = "teste/esp8266";    /* Albert */
+    var payload = 0;
+    var qos = 0;
+    var retained = 0;
+    var message = "test";
+    // var clientId = "IeCJSClient" + parseInt(Math.random() * 1e5);
+    var clientId = 13412341234;
+
+    function onConnect() {
+      // Conexao ao Broker
+      console.log("Conectado");
+      mqtt.subscribe(topic);
+      // mqtt.publish("teste/esp8266");
+    }
+    function onError(message) {
+      // Ocorrencia de erro
+      console.log("Falha: " + message.errorCode + " " + message.errorMessage);
+      setTimeout(MQTTConnect, reconnectTimeout);
+    }
+    function onMessageArrived(msg) {
+      // Mensagem recebida
+      console.log("Mensagem: " + msg.destinationName + "=" + msg.payloadString);
+      
+    }
+
+    function MQTTConnect() {
+      // Conecta no Broker
+      console.log("Conectando " + host + " " + port);
+      mqtt = new Paho.MQTT.Client(host, port, 12345);
+      var options = { timeout: 10,
+                      userName: user,
+                      password: password,
+                      keepAliveInterval: 10,
+                      onSuccess: onConnect,
+                      onFailure: onError
+                    };
+      mqtt.onMessageArrived = onMessageArrived;
+      mqtt.onConnectionLost = onError;
+      mqtt.connect(options);
+    }
+
+    this.publish = function(topic,payload,qos,retained) {
+			 console.log("Publishing message to: ", topic);
+			 var message = null;
+ 			if(arguments.length === 0){
+ 				throw new Error("Invalid argument."+"length");
+ 			}else if(arguments.length == 1) {
+ 				if (!(topic instanceof Message) && (typeof topic !== "string"))
+ 					throw new Error("Invalid argument:"+ typeof topic);
+ 				message = topic;
+ 				if (typeof message.destinationName === "undefined")
+ 					throw new Error(format(ERROR.INVALID_ARGUMENT,[message.destinationName,"Message.destinationName"]));
+ 				client.send(message);
+ 			}else {
+ 				//parameter checking in Message object
+ 				message = new Message(payload);
+ 				message.destinationName = topic;
+ 				if(arguments.length >= 3)
+ 					message.qos = qos;
+ 				if(arguments.length >= 4)
+ 					message.retained = retained;
+ 				client.send(message);
+ 			}
+		};
+
+    $(document).ready(function() {
+
+      $("#liga-output").click(function(){
+          // alert("teste ok!");
+          // console.log("publicando");
+          // var payload = "L";
+          // var TopicPublish = $("#pub-topic-text")[0].value;
+          // TopicPublish = "teste/esp8266";
+          // var TopicPublish = "teste/esp8266";
+
+          // topic = "teste/esp8266";
+          // payload = 1;
+          // qos = 0;
+          // retainer = 0;
+          // this.publish(TopicPublish, payload, 0);
+
+          return publish(topic, payload, qos, retained);
+          
+
+      });
+
+    });
+  </script>
+</head>
+
+<input class="but" id="liga-output"     type="button" value="Ligar">
+<input class="but" id="desliga-output"  type="button" value="Desligar"><br><br>
+
+<body onload="MQTTConnect()">
+  <table align="center">
+    <tr>
+      <th colspan="3">Iot</th>
+    </tr>
+    <tr>
+      <td id="temp" style="width: 200px; height: 200px;"></td>
+      <td id="umi" style="width: 200px; height: 200px;"></td>
+      <td id="int" style="width: 200px; height: 200px;"></td>
+    </tr>
+    <tr>
+      <th id="toggle">Status: n/d</th>
+      <th id="dt" colspan="2">Atualização: n/d</th>
+    </tr>
+  </table>
+</body>
+</html>
